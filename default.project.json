@@ -1,0 +1,125 @@
+{
+  "name": "MarvinsDenseForest",
+  "tree": {
+    "$className": "DataModel",
+
+    "ReplicatedStorage": {
+      "Shared": {
+        "$path": "src/shared"
+      },
+      "Packages": {
+        "$path": "Packages"
+      },
+      "Assets": {
+        "$className": "Folder"
+      },
+      "Remotes": {
+        "$className": "Folder"
+      }
+    },
+
+    "ServerScriptService": {
+      "Server": {
+        "$path": "src/server"
+      },
+      "ServerPackages": {
+        "$path": "ServerPackages"
+      }
+    },
+
+    "ServerStorage": {
+      "Maps": {
+        "$className": "Folder"
+      },
+      "Entities": {
+        "$className": "Folder"
+      }
+    },
+
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "Client": {
+          "$path": "src/client"
+        }
+      },
+      "$properties": {
+        "CameraMode": "Classic",
+        "CharacterWalkSpeed": 14,
+        "CharacterJumpPower": 42
+      }
+    },
+
+    "StarterGui": {
+      "$properties": {
+        "ResetPlayerGuiOnSpawn": false
+      }
+    },
+
+    "Workspace": {
+      "$properties": {
+        "FilteringEnabled": true,
+        "StreamingEnabled": false
+      },
+      "Baseplate": {
+        "$className": "Part",
+        "$properties": {
+          "Anchored": true,
+          "Color": [0.2, 0.19, 0.22],
+          "Material": "Slate",
+          "Locked": true,
+          "Position": [0, -10, 0],
+          "Size": [512, 20, 512]
+        }
+      },
+      "LobbySpawn": {
+        "$className": "SpawnLocation",
+        "$properties": {
+          "Anchored": true,
+          "CanCollide": true,
+          "Neutral": true,
+          "Position": [0, 1, 0],
+          "Size": [8, 1, 8],
+          "Transparency": 1,
+          "Material": "SmoothPlastic",
+          "TopSurface": "Smooth",
+          "BottomSurface": "Smooth"
+        }
+      }
+    },
+
+    "Lighting": {
+      "$properties": {
+        "Ambient": [0.15, 0.14, 0.18],
+        "OutdoorAmbient": [0.2, 0.19, 0.24],
+        "Brightness": 2,
+        "ClockTime": 18.5,
+        "FogColor": [0.35, 0.32, 0.4],
+        "FogEnd": 250,
+        "FogStart": 60,
+        "GlobalShadows": true,
+        "ShadowSoftness": 0.5,
+        "EnvironmentDiffuseScale": 0.5,
+        "EnvironmentSpecularScale": 0.5,
+        "Technology": "Future"
+      }
+    },
+
+    "SoundService": {
+      "$properties": {
+        "RespectFilteringEnabled": true
+      },
+      "SFX": {
+        "$className": "SoundGroup"
+      },
+      "Ambience": {
+        "$className": "SoundGroup"
+      },
+      "Jumpscare": {
+        "$className": "SoundGroup"
+      },
+      "UI": {
+        "$className": "SoundGroup"
+      }
+    }
+  }
+}
