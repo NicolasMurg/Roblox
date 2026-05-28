@@ -408,6 +408,37 @@ do
 				end
 			end
 
+			-- ===== Escape minigame wiring =====
+			-- Share the same remotes PossessionService uses. Find-or-create so
+			-- it works no matter which script initializes first.
+			local remotesFolder = ReplicatedStorage:FindFirstChild("Remotes")
+			if not remotesFolder then
+				remotesFolder = Instance.new("Folder")
+				remotesFolder.Name = "Remotes"
+				remotesFolder.Parent = ReplicatedStorage
+			end
+			local function findOrCreateRemote(rname: string): RemoteEvent
+				local r = remotesFolder:FindFirstChild(rname)
+				if not r then
+					r = Instance.new("RemoteEvent")
+					r.Name = rname
+					r.Parent = remotesFolder
+				end
+				return r :: RemoteEvent
+			end
+			local escapeMinigame = findOrCreateRemote("EscapeMinigame")
+			local escapedEvent = findOrCreateRemote("EscapeEscaped")
+
+			-- Who the AI Hollow is currently choking + whether they have cleared
+			-- their escape bar. The hold loop watches escapeRequested.
+			local currentVictim: Player? = nil
+			local escapeRequested = false
+			escapedEvent.OnServerEvent:Connect(function(player)
+				if player == currentVictim then
+					escapeRequested = true
+				end
+			end)
+
 			-- ===== Full attack on a target =====
 			-- Crouch → pounce (lurch the root toward the player) → pin the
 			-- player's head and raise the arm overhead → hold → release and
@@ -472,6 +503,15 @@ do
 					local hum = pin.humanoid
 					hum.Health = math.max(0, hum.Health - hum.MaxHealth * INITIAL_HIT_FRACTION)
 				end
+
+				-- Show the escape minigame to the victim (real players only —
+				-- dummies have no client).
+				local victimPlayer = Players:GetPlayerFromCharacter(targetChar)
+				if victimPlayer then
+					currentVictim = victimPlayer
+					escapeRequested = false
+					escapeMinigame:FireClient(victimPlayer, true)
+				end
 				tweenChain(armR, 140, 30, 0.35)
 				tweenRoot(pounceEndCF, 0.35)
 				task.wait(0.35)
@@ -506,6 +546,7 @@ do
 						or not pin.head.Parent
 						or not heldHum
 						or heldHum.Health <= 0
+						or escapeRequested
 					then
 						break
 					end
@@ -516,6 +557,10 @@ do
 
 				-- RELEASE — drop the player (corpse or otherwise) and snap home
 				releasePin(pin)
+				if victimPlayer then
+					escapeMinigame:FireClient(victimPlayer, false)
+					currentVictim = nil
+				end
 				tweenChain(armL, 0, 0, 0.5)
 				tweenChain(armR, 0, 0, 0.5)
 				tweenChain(legL, 0, 0, 0.5)

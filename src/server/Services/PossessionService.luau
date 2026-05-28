@@ -23,6 +23,15 @@ local Appearances = require(ReplicatedStorage.Shared.Modules.VillainAppearances)
 local AUTHORIZED_USERNAME = "Mlg6423"
 local REMOTE_NAME = "TogglePossession"
 local REMOTE_NAME_GRAB = "ToggleGrab"
+-- Escape minigame remotes (shared with the AI Hollow in VillainPreview).
+-- EscapeMinigame: server → client, FireClient(victim, true/false) to
+-- show/hide the struggle bar. EscapeEscaped: client → server, the victim
+-- fires it when they clear all the markers and should be released.
+local REMOTE_NAME_ESCAPE = "EscapeMinigame"
+local REMOTE_NAME_ESCAPED = "EscapeEscaped"
+-- Populated in KnitStart; read by startGrab/releaseGrab to drive the
+-- victim's escape UI.
+local escapeMinigameRemote: RemoteEvent? = nil
 
 -- Vertical offset from the player's HumanoidRootPart to the villain rig's
 -- Root. Tuned so the villain's feet land near the player's feet.
@@ -539,6 +548,14 @@ local function releaseGrab(player: Player, villain: Model?)
 		return
 	end
 	holdState[player] = nil
+
+	-- Hide the victim's escape minigame, whatever ended the grab (manual
+	-- release, choke death, or a successful escape). Harmless if they never
+	-- had one (dummy target) or already closed it client-side on escape.
+	local victimPlayer = Players:GetPlayerFromCharacter(state.target)
+	if victimPlayer and escapeMinigameRemote then
+		escapeMinigameRemote:FireClient(victimPlayer, false)
+	end
 
 	-- Destroy the hand/orient constraints + their attachments so the head is
 	-- no longer pinned to the Hollow's hand.
@@ -1295,6 +1312,14 @@ local function startGrab(player: Player, char: Model, villain: Model)
 
 	villain:SetAttribute("InHold", true)
 
+	-- If the grabbed target is a real player, show their escape minigame.
+	-- Dummies have no client, so GetPlayerFromCharacter returns nil and we
+	-- skip it for them.
+	local victimPlayer = Players:GetPlayerFromCharacter(target)
+	if victimPlayer and escapeMinigameRemote then
+		escapeMinigameRemote:FireClient(victimPlayer, true)
+	end
+
 	-- ===== Damage: initial hit + 15s choke drain =====
 	-- Mirrors the AI-Hollow attack in VillainPreview so the player-controlled
 	-- grab is just as lethal:
@@ -1495,6 +1520,43 @@ function PossessionService:KnitStart()
 			releaseGrab(player, villain)
 		else
 			startGrab(player, char, villain)
+		end
+	end)
+
+	-- Escape minigame remotes. Created here (find-or-create) so both this
+	-- service and the AI Hollow in VillainPreview can share them.
+	escapeMinigameRemote = remotes:FindFirstChild(REMOTE_NAME_ESCAPE) :: RemoteEvent?
+	if not escapeMinigameRemote then
+		local r = Instance.new("RemoteEvent")
+		r.Name = REMOTE_NAME_ESCAPE
+		r.Parent = remotes
+		escapeMinigameRemote = r
+	end
+
+	local escapedEvent = remotes:FindFirstChild(REMOTE_NAME_ESCAPED) :: RemoteEvent?
+	if not escapedEvent then
+		escapedEvent = Instance.new("RemoteEvent")
+		escapedEvent.Name = REMOTE_NAME_ESCAPED
+		escapedEvent.Parent = remotes
+	end
+	assert(escapedEvent)
+
+	-- A victim cleared their escape bar. Find the player-Hollow currently
+	-- holding that victim and release it. (The AI Hollow handles its own
+	-- copy of this event in VillainPreview.)
+	escapedEvent.OnServerEvent:Connect(function(victimPlayer)
+		local victimChar = victimPlayer.Character
+		if not victimChar then
+			return
+		end
+		for grabber, state in holdState do
+			if state.target == victimChar then
+				local v = grabber.Character
+					and (grabber.Character:FindFirstChild("TheHollowFinal") :: Model?)
+					or nil
+				releaseGrab(grabber, v)
+				break
+			end
 		end
 	end)
 
